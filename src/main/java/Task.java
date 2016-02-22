@@ -2,6 +2,7 @@ import java.util.List;
 import org.sql2o.*;
 
 public class Task {
+  private int categoryId;
   private int id;
   private String description;
 
@@ -13,12 +14,17 @@ public class Task {
     return id;
   }
 
-  public Task(String description) {
+  public int getCategoryId() {
+    return categoryId;
+  }
+
+  public Task(String description, int categoryId) {
     this.description = description;
+    this.categoryId = categoryId;
   }
 
 public static List<Task> all() {
-  String sql = "SELECT id, description FROM Tasks";
+  String sql = "SELECT id, description, categoryId FROM Tasks";
   try(Connection con = DB.sql2o.open()) {
     return con.createQuery(sql).executeAndFetch(Task.class);
   }
@@ -30,7 +36,31 @@ public static List<Task> all() {
      return false;
    } else {
      Task newTask = (Task) otherTask;
-     return this.getDescription().equals(newTask.getDescription());
+     return this.getDescription().equals(newTask.getDescription()) &&
+      this.getId() == newTask.getId() &&
+      this.getCategoryId() == newTask.getCategoryId();
    }
  }
+
+ public void save() {
+   try(Connection con = DB.sql2o.open()) {
+     String sql = "INSERT INTO Tasks (description, categoryId) VALUES (:description, :categoryId)";
+     this.id = (int) con.createQuery(sql, true)
+      .addParameter("description", this.description)
+      .addParameter("categoryId", this.categoryId)
+      .executeUpdate()
+      .getKey();
+   }
+ }
+
+ public static Task find(int id) {
+   try(Connection con = DB.sql2o.open()) {
+     String sql = "SELECT * FROM Tasks where id=:id";
+     Task task = con.createQuery(sql)
+      .addParameter("id", id)
+      .executeAndFetchFirst(Task.class);
+    return task;
+   }
+ }
+
 }
